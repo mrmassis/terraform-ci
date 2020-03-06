@@ -1,0 +1,89 @@
+name: Terraform CI
+
+on: [push]
+
+jobs:
+  #############################################################################
+  ## STACK                                                                   ##
+  #############################################################################
+  ## - validate
+  ## - plan
+  ## - apply
+  ##
+
+  ##
+  ##
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Run a Terraform init
+      uses: docker://hashicorp/terraform:0.12.11
+      with:
+        entrypoint: terraform
+        args: init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_access_secret }}
+
+    - name: Run a Terraform validate
+      run: terraform validate
+
+
+  ##
+  ##
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Run a Terraform init
+      uses: docker://hashicorp/terraform:0.12.11
+      with:
+        entrypoint: terraform
+        args: init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_access_secret }}
+
+    - name: Run plan and save in planfile
+      run: terraform plan 
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_access_secret }}
+
+    needs: validate
+    
+
+  ##
+  ##
+  apply:
+    name: Apply
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Run a Terraform init
+      uses: docker://hashicorp/terraform:0.12.11
+      with:
+        entrypoint: terraform
+        args: init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_access_secret }}
+
+    - name: Apply the plan saved in planfile
+      run: terraform apply -auto-approve -input=false
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_access_secret }}
+
+    needs: [plan, validate]
+
+## EOF
